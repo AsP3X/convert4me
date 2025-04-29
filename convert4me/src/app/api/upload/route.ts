@@ -31,8 +31,9 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Create unique filename
-    const uniqueFilename = `${uuidv4()}${extname(file.name)}`;
+    // Create unique filename with timestamp to ensure uniqueness
+    const timestamp = Date.now();
+    const uniqueFilename = `${uuidv4()}-${timestamp}${extname(file.name)}`;
     
     // Ensure uploads directory exists
     const uploadsDir = join(process.cwd(), 'uploads');
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
     await writeFile(filePath, buffer);
     
-    // Return file info
+    // Return file info with a unique identifier
     const uploadedFile = {
       filename: uniqueFilename,
       originalName: file.name,
@@ -53,7 +54,8 @@ export async function POST(request: NextRequest) {
       size: file.size,
       mimetype: file.type,
       fileType: fileExt,
-      possibleOutputFormats: getPossibleOutputFormats(fileExt)
+      possibleOutputFormats: getPossibleOutputFormats(fileExt),
+      uploadTimestamp: timestamp // Include timestamp for additional uniqueness
     };
     
     return Response.json({

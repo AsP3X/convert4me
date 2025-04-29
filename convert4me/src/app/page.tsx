@@ -6,6 +6,7 @@ import FileItem from './components/FileItem';
 import apiClient, { UploadedFile, ConversionJob } from './lib/api';
 
 interface FileState {
+  id: string;
   file: UploadedFile;
   conversionJob?: ConversionJob;
 }
@@ -54,9 +55,14 @@ export default function Home() {
 
   // Handle file upload
   const handleFileUpload = useCallback((uploadedFile: UploadedFile) => {
+    const uniqueId = `${uploadedFile.filename}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    
     setFiles((prevFiles) => [
       ...prevFiles,
-      { file: uploadedFile },
+      { 
+        id: uniqueId,
+        file: uploadedFile 
+      },
     ]);
   }, []);
 
@@ -68,10 +74,10 @@ export default function Home() {
         outputFormat
       );
       
-      // Update file state with initial job info
+      // Update file state with initial job info and clear any previous job result
       setFiles((prevFiles) =>
         prevFiles.map((f) =>
-          f.file.filename === fileState.file.filename
+          f.id === fileState.id
             ? {
                 ...f,
                 conversionJob: {
@@ -95,7 +101,7 @@ export default function Home() {
           
           setFiles((prevFiles) =>
             prevFiles.map((f) =>
-              f.file.filename === fileState.file.filename
+              f.id === fileState.id && f.conversionJob?.jobId === jobId
                 ? {
                     ...f,
                     conversionJob: jobStatus,
@@ -104,8 +110,8 @@ export default function Home() {
             )
           );
           
-          // Clear interval when job is completed or failed
-          if (jobStatus.status === 'completed' || jobStatus.status === 'failed') {
+          // Clear interval when job is completed, failed, or cancelled
+          if (['completed', 'failed', 'cancelled'].includes(jobStatus.status)) {
             clearInterval(intervalId);
           }
         } catch (error) {
@@ -125,19 +131,40 @@ export default function Home() {
     window.open(apiClient.getDownloadUrl(jobId), '_blank');
   }, []);
 
+  // Handle job cancellation
+  const handleCancelJob = useCallback(async (jobId: string, fileId: string) => {
+    try {
+      const jobStatus = await apiClient.cancelJob(jobId);
+      
+      // Update file state with cancelled job info
+      setFiles((prevFiles) =>
+        prevFiles.map((f) =>
+          f.id === fileId && f.conversionJob?.jobId === jobId
+            ? {
+                ...f,
+                conversionJob: jobStatus,
+              }
+            : f
+        )
+      );
+    } catch (error) {
+      console.error('Error cancelling job:', error);
+    }
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      <main className="container mx-auto py-8 px-4 max-w-4xl">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
+      <main className="container mx-auto py-10 px-4 max-w-5xl">
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-bold mb-3 text-blue-500">
             Convert4Me
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300">
-            The easy way to convert your files
+          <p className="text-lg text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
+            Transform your files with just a few clicks
           </p>
         </div>
         
-        <div className="mb-8">
+        <div className="card mb-10 p-6">
           <FileUploader 
             onFileUpload={handleFileUpload} 
             acceptedFileTypes={supportedFormats}
@@ -145,24 +172,35 @@ export default function Home() {
         </div>
         
         {files.length > 0 && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold mb-4">Your Files</h2>
+          <div className="space-y-6">
+            <h2 className="text-xl font-medium mb-4 px-1">Your Files</h2>
             
-            {files.map((fileState) => (
-              <FileItem
-                key={fileState.file.filename}
-                file={fileState.file}
-                conversionJob={fileState.conversionJob}
-                onConvert={(outputFormat) => handleConvert(fileState, outputFormat)}
-                onDownload={
-                  fileState.conversionJob?.status === 'completed'
-                    ? () => handleDownload(fileState.conversionJob!.jobId)
-                    : undefined
-                }
-              />
-            ))}
+            <div className="grid gap-4 md:grid-cols-2">
+              {files.map((fileState) => (
+                <FileItem
+                  key={fileState.id}
+                  file={fileState.file}
+                  conversionJob={fileState.conversionJob}
+                  onConvert={(outputFormat) => handleConvert(fileState, outputFormat)}
+                  onDownload={
+                    fileState.conversionJob?.status === 'completed'
+                      ? () => handleDownload(fileState.conversionJob!.jobId)
+                      : undefined
+                  }
+                  onCancel={
+                    fileState.conversionJob?.status === 'processing'
+                      ? () => handleCancelJob(fileState.conversionJob!.jobId, fileState.id)
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
           </div>
         )}
+
+        <footer className="mt-14 text-center text-sm text-gray-500 dark:text-gray-400">
+          <p>Powered by Next.js and Tailwind CSS</p>
+        </footer>
       </main>
     </div>
   );

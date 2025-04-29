@@ -1,8 +1,19 @@
 import { join, basename, extname } from 'path';
-import { spawn } from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
 import ffmpegPath from 'ffmpeg-static';
 import { existsSync } from 'fs';
 import { sendProgressUpdate } from '../socket/route';
+
+// Map to store active conversion processes
+export const activeConversionProcesses = new Map<string, ChildProcess>();
+
+// Signal that a process was cancelled by user
+export class CancellationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'CancellationError';
+  }
+}
 
 interface ConversionOptions {
   resolution?: string;
@@ -89,6 +100,12 @@ export async function convertVideo(
     // Start FFmpeg process
     const ffmpeg = spawn(ffmpegCmd, args);
     let stderr = '';
+    let wasCancelled = false;
+    
+    // Store the process in the active processes map if jobId is provided
+    if (jobId) {
+      activeConversionProcesses.set(jobId, ffmpeg);
+    }
 
     // Capture stderr for progress information and errors
     ffmpeg.stderr.on('data', (data) => {
@@ -97,6 +114,11 @@ export async function convertVideo(
       
       // Log FFmpeg output for debugging
       console.log(chunk);
+      
+      // Check for cancellation signals
+      if (chunk.includes('Exiting normally, received signal 15')) {
+        wasCancelled = true;
+      }
       
       // Try to extract progress information
       const durationMatch = stderr.match(/Duration: (\d{2}):(\d{2}):(\d{2})\.\d{2}/);
@@ -127,6 +149,11 @@ export async function convertVideo(
 
     // Handle process exit
     ffmpeg.on('close', (code) => {
+      // Remove the process from active processes map if jobId is provided
+      if (jobId) {
+        activeConversionProcesses.delete(jobId);
+      }
+      
       if (code === 0) {
         progressCallback(100);
         // Send final progress update
@@ -134,6 +161,9 @@ export async function convertVideo(
           sendProgressUpdate(jobId, 100);
         }
         resolve(outputPath);
+      } else if (wasCancelled || stderr.includes('Exiting normally, received signal 15')) {
+        // If the process was cancelled, don't treat it as an error
+        reject(new CancellationError('Conversion was cancelled by user'));
       } else {
         reject(new Error(`FFmpeg exited with code ${code}: ${stderr}`));
       }
@@ -141,6 +171,11 @@ export async function convertVideo(
 
     // Handle process error
     ffmpeg.on('error', (err) => {
+      // Remove the process from active processes map if jobId is provided
+      if (jobId) {
+        activeConversionProcesses.delete(jobId);
+      }
+      
       reject(new Error(`FFmpeg process error: ${err.message}`));
     });
   });

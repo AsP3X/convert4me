@@ -8,11 +8,12 @@ export interface UploadedFile {
   mimetype: string;
   fileType: string;
   possibleOutputFormats: string[];
+  uploadTimestamp?: number; // Optional to maintain backward compatibility
 }
 
 export interface ConversionJob {
   jobId: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
   progress: number;
   originalFilename: string;
   inputFormat: string;
@@ -128,6 +129,24 @@ class ApiClient {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Error getting job status');
+    }
+    
+    const data = await response.json();
+    return data.jobStatus;
+  }
+  
+  // Cancel a conversion job
+  async cancelJob(jobId: string): Promise<ConversionJob> {
+    const response = await fetch(`/api/cancel/${jobId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error cancelling job');
     }
     
     const data = await response.json();

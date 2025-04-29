@@ -2,14 +2,15 @@ import { NextRequest } from 'next/server';
 import { existsSync } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { detectFileType, getPossibleOutputFormats, isConversionSupported } from '../utils/converters';
-import { convertVideo } from '../utils/videoConverter';
+import { convertVideo, CancellationError } from '../utils/videoConverter';
 import { convertImage } from '../utils/imageConverter';
 import { convertDocument } from '../utils/documentConverter';
 import { join } from 'path';
 import { mkdir } from 'fs/promises';
+import { unlink } from 'fs/promises';
 
 // In-memory database for storing conversion jobs
-type JobStatus = 'pending' | 'processing' | 'completed' | 'failed';
+type JobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
 
 interface ConversionJob {
   jobId: string;
@@ -25,7 +26,24 @@ interface ConversionJob {
   completedAt?: Date;
 }
 
-const conversionJobs = new Map<string, ConversionJob>();
+export const conversionJobs = new Map<string, ConversionJob>();
+
+// Helper function to delete a file and handle errors
+async function deleteFile(filePath: string): Promise<boolean> {
+  try {
+    if (existsSync(filePath)) {
+      await unlink(filePath);
+      console.log(`Deleted file: ${filePath}`);
+      return true;
+    } else {
+      console.log(`File not found for deletion: ${filePath}`);
+      return false;
+    }
+  } catch (error) {
+    console.error(`Error deleting file ${filePath}:`, error);
+    return false;
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -129,16 +147,36 @@ export async function POST(request: NextRequest) {
           job.outputPath = outputPath;
           job.completedAt = new Date();
           conversionJobs.set(jobId, job);
+          
+          // Delete the input file after successful conversion
+          await deleteFile(filePath);
         }
       } catch (error) {
         console.error('Conversion error:', error);
         
-        // Update job with failed status
-        const job = conversionJobs.get(jobId);
-        if (job) {
-          job.status = 'failed';
-          job.error = error instanceof Error ? error.message : 'Unknown error';
-          conversionJobs.set(jobId, job);
+        // Check if error is a cancellation
+        if (error instanceof CancellationError) {
+          const job = conversionJobs.get(jobId);
+          if (job) {
+            job.status = 'cancelled';
+            // Don't set an error message for cancellations
+            job.completedAt = new Date();
+            conversionJobs.set(jobId, job);
+            
+            // Delete the input file after cancellation
+            await deleteFile(filePath);
+          }
+        } else {
+          // Update job with failed status for regular errors
+          const job = conversionJobs.get(jobId);
+          if (job) {
+            job.status = 'failed';
+            job.error = error instanceof Error ? error.message : 'Unknown error';
+            conversionJobs.set(jobId, job);
+            
+            // Delete the input file even after failure
+            await deleteFile(filePath);
+          }
         }
       }
     })();
@@ -155,7 +193,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-// Export conversion jobs for other routes to use
-export { conversionJobs }; 
+} 
