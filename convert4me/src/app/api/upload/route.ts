@@ -4,6 +4,7 @@ import { join, extname } from 'path';
 import { existsSync } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { getSupportedInputFormats, getPossibleOutputFormats } from '../utils/converters';
+import '../../startupCheck';
 
 export async function POST(request: NextRequest) {
   try {

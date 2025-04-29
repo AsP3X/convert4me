@@ -9,6 +9,9 @@ import { join } from 'path';
 import { mkdir } from 'fs/promises';
 import { unlink } from 'fs/promises';
 
+// Import startup check (will run once when this module is first loaded)
+import '../../startupCheck';
+
 // In-memory database for storing conversion jobs
 type JobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
 

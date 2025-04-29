@@ -3,28 +3,7 @@ import { copyFile, writeFile } from 'fs/promises';
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import { createWriteStream } from 'fs';
-
-// Map of command availability to avoid repeated errors
-const commandAvailability: { [key: string]: boolean } = {};
-
-/**
- * Check if a command is available
- */
-function isCommandAvailable(command: string): boolean {
-  if (commandAvailability[command] !== undefined) {
-    return commandAvailability[command];
-  }
-  
-  try {
-    execSync(`which ${command}`);
-    commandAvailability[command] = true;
-    return true;
-  } catch (error) {
-    commandAvailability[command] = false;
-    console.log(`Command '${command}' is not available.`);
-    return false;
-  }
-}
+import { isCommandAvailable } from '../../utils/dependencyCheck';
 
 interface ConversionOptions {
   [key: string]: unknown;
