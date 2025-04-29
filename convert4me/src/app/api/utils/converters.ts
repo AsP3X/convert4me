@@ -12,7 +12,7 @@ const imageConverters = {
 // Add document converters
 const documentConverters = {
   supportedInputFormats: ['pdf', 'docx'],
-  possibleOutputFormats: ['pdf']
+  possibleOutputFormats: ['pdf', 'jpg', 'jpeg', 'png', 'webp']
 };
 
 // All converters in one array
