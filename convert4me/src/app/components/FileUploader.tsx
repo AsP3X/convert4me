@@ -69,10 +69,10 @@ export default function FileUploader({ onFileUpload, acceptedFileTypes }: FileUp
   return (
     <div 
       className={`
-        relative p-8 text-center border-2 border-dashed rounded-md
-        transition-colors duration-200 ease-in-out 
-        ${isDragging ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/20'}
-        h-64 flex flex-col items-center justify-center
+        relative p-10 text-center border-2 border-dashed rounded-xl
+        transition-all duration-300 ease-in-out 
+        ${isDragging ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10 scale-[1.02]' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/20'}
+        h-72 flex flex-col items-center justify-center
       `}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -86,10 +86,10 @@ export default function FileUploader({ onFileUpload, acceptedFileTypes }: FileUp
         accept={acceptValue}
       />
       
-      <div className="space-y-4">
-        <div className="w-16 h-16 mx-auto bg-white dark:bg-gray-800 rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-700 shadow-sm">
+      <div className="space-y-6">
+        <div className="w-20 h-20 mx-auto bg-white dark:bg-gray-800 rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-700 shadow-md transform transition-transform duration-300 hover:scale-110">
           <svg 
-            className="w-8 h-8 text-blue-500" 
+            className={`w-10 h-10 text-blue-500 transition-all duration-300 ${isDragging ? 'scale-110' : ''}`}
             fill="none" 
             stroke="currentColor" 
             viewBox="0 0 24 24" 
@@ -104,40 +104,45 @@ export default function FileUploader({ onFileUpload, acceptedFileTypes }: FileUp
           </svg>
         </div>
         
-        <div className="space-y-2">
-          <p className="text-lg font-medium">
+        <div className="space-y-3">
+          <p className="text-xl font-semibold text-gray-900 dark:text-white">
             {isDragging ? 'Drop your file here' : 'Drag & drop your file here'}
           </p>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-base text-gray-600 dark:text-gray-400">
             or{' '}
             <button 
               type="button" 
-              className="btn btn-primary px-4 py-1.5 ml-1 text-sm hover-effect" 
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-sm transition-all duration-200 ease-in-out hover:shadow-md mx-1"
               onClick={handleButtonClick}
             >
               Browse files
             </button>
           </p>
           {acceptedFileTypes && (
-            <p className="text-xs text-gray-500 dark:text-gray-500 mt-3">
-              Supported formats: {acceptedFileTypes.join(', ')}
+            <p className="text-sm text-gray-500 dark:text-gray-500 mt-4">
+              Supported formats: <span className="font-medium">{acceptedFileTypes.join(', ')}</span>
             </p>
           )}
         </div>
       </div>
 
       {isUploading && (
-        <div className="absolute inset-0 bg-white/90 dark:bg-gray-900/90 flex items-center justify-center rounded-md">
+        <div className="absolute inset-0 bg-white/95 dark:bg-gray-900/95 flex items-center justify-center rounded-xl backdrop-blur-sm transition-opacity duration-300">
           <div className="flex flex-col items-center">
-            <div className="w-10 h-10 border-4 border-blue-200 dark:border-blue-800 border-t-blue-500 rounded-full animate-spin"></div>
-            <p className="mt-3 text-sm font-medium">Uploading file...</p>
+            <div className="w-12 h-12 border-4 border-blue-200 dark:border-blue-800 border-t-blue-500 rounded-full animate-spin shadow-md"></div>
+            <p className="mt-4 text-base font-medium text-gray-800 dark:text-gray-200">Uploading file...</p>
           </div>
         </div>
       )}
 
       {uploadError && (
-        <div className="absolute bottom-4 left-4 right-4 bg-red-500 text-white p-2 rounded-md text-sm font-medium">
-          {uploadError}
+        <div className="absolute bottom-4 left-4 right-4 bg-red-500 text-white p-3 rounded-lg text-sm font-medium shadow-lg animate-fadeIn">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            {uploadError}
+          </div>
         </div>
       )}
     </div>
