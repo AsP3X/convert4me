@@ -81,14 +81,17 @@
    - Download buttons
 2. Add responsive design for mobile support using Tailwind's responsive utilities
 3. Implement error handling and user feedback
-4. Apply Apple Vision Pro-inspired design principles using Tailwind:
-   - Glassmorphism with Tailwind's backdrop-blur utilities
-   - Floating UI elements with depth using shadow utilities
-   - Minimalist, clean interfaces with ample whitespace
-   - Subtle shadows and highlights for dimensionality
-   - Soft color palette with emphasis on transparency
-   - Fluid animations and transitions with Tailwind plugins
-   - Focus on typography with SF Pro or similar fonts
+4. Apply modern enterprise design principles:
+   - Clean, professional interface with consistent spacing and alignment
+   - Navigation bar with logo/app name on the left side and navigation elements (About, Features, Contact)
+   - Right-side navigation elements for user authentication (Login/Register buttons)
+   - Smooth, fluid loading animations for progress indicators
+   - Card-based components with subtle shadows for content separation
+   - Consistent color palette with primary brand colors and neutral backgrounds
+   - Strategic use of whitespace to enhance readability
+   - Clear visual hierarchy with distinctive headings and body text
+   - Accessibility considerations with proper contrast ratios
+   - Consistent button styles and interactive elements
 
 ### 3.3 State Management
 1. Set up state management using React Context or Next.js server components for:
@@ -194,7 +197,7 @@ To add support for a new file type:
 - Next.js API Routes for backend communication
 - Framer Motion for fluid animations
 - Tailwind plugins for advanced styling features
-- SF Pro or Inter font family for typography
+- Inter font family for typography
 
 ## Timeline Estimation
 - Phase 1: 1 week (including Next.js & Tailwind setup)
